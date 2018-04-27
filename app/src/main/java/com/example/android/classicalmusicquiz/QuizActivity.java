@@ -16,14 +16,20 @@
 
 package com.example.android.classicalmusicquiz;
 
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -68,6 +74,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     private MediaSessionCompat mMediaSession;
     private PlaybackStateCompat.Builder mStateBuilder;
 
+    private static final String PLAYER_NOTIFICATION_CHANNEL = "player-channel";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -184,7 +191,68 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    // TODO (1): Create a method that shows a MediaStyle notification with two actions (play/pause, skip to previous). Clicking on the notification should launch this activity. It should take one argument that defines the state of MediaSession.
+    // DONE (1): Create a method that shows a MediaStyle notification with two actions (play/pause,
+    // skip to previous). Clicking on the notification should launch this activity. It should take
+    // one argument that defines the state of MediaSession.
+
+    private void showNotification(PlaybackStateCompat state) {
+
+        NotificationManager notificationManager =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel notificationChannel =
+                    new NotificationChannel(PLAYER_NOTIFICATION_CHANNEL
+                            , getString(R.string.player), NotificationManager.IMPORTANCE_DEFAULT);
+
+            // Configure the notification channel.
+//            notificationChannel.setDescription("Channel description");
+//            notificationChannel.enableLights(true);
+//            notificationChannel.setLightColor(Color.RED);
+//            notificationChannel.setVibrationPattern(new long[]{0, 1000, 500, 1000});
+//            notificationChannel.enableVibration(true);
+            notificationManager.createNotificationChannel(notificationChannel);
+        }
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this,
+                PLAYER_NOTIFICATION_CHANNEL);
+
+        int icon;
+        String play_pause;
+        if (state.getState() == PlaybackStateCompat.STATE_PLAYING) {
+            icon = R.drawable.exo_controls_pause;
+            play_pause = getString(R.string.exo_controls_pause_description);
+        } else {
+            icon = R.drawable.exo_controls_play;
+            play_pause = getString(R.string.exo_controls_play_description);
+        }
+
+        NotificationCompat.Action playPauseAction = new NotificationCompat.Action(
+                icon, play_pause,
+                MediaButtonReceiver.buildMediaButtonPendingIntent(this,
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE));
+
+        NotificationCompat.Action restartAction = new NotificationCompat.Action(
+                R.drawable.exo_controls_previous, getString(R.string.restart),
+                MediaButtonReceiver.buildMediaButtonPendingIntent(this,
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE));
+
+        PendingIntent contentPendingIntent = PendingIntent.getActivity(this, 0 ,
+                new Intent(this, QuizActivity.class), 0);
+
+        builder.setContentTitle(getString(R.string.guess))
+                .setContentText(getString(R.string.notification_text))
+                .setContentIntent(contentPendingIntent)
+                .setSmallIcon(R.drawable.ic_music_note)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .addAction(playPauseAction)
+                .addAction(restartAction)
+                .setStyle(new android.support.v4.media.app.NotificationCompat.MediaStyle()
+                    .setMediaSession(mMediaSession.getSessionToken())
+                    .setShowActionsInCompactView(0,1));
+
+        notificationManager.notify(0, builder.build());
+    }
 
     /**
      * Initialize ExoPlayer.
@@ -342,9 +410,13 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
             mStateBuilder.setState(PlaybackStateCompat.STATE_PAUSED,
                     mExoPlayer.getCurrentPosition(), 1f);
         }
-        mMediaSession.setPlaybackState(mStateBuilder.build());
+
+        PlaybackStateCompat state = mStateBuilder.build();
+
+        mMediaSession.setPlaybackState(state);
         
-        // TODO (2): Call the method to show the notification, passing in the PlayBackStateCompat object.
+        // DONE (2): Call the method to show the notification, passing in the PlayBackStateCompat object.
+        showNotification(state);
     }
 
     @Override
