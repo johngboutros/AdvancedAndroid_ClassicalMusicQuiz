@@ -19,6 +19,10 @@ package com.example.android.classicalmusicquiz;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.job.JobScheduler;
+import android.app.job.JobService;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -73,7 +77,7 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
     private Button[] mButtons;
     private SimpleExoPlayer mExoPlayer;
     private SimpleExoPlayerView mPlayerView;
-    private MediaSessionCompat mMediaSession;
+    private static MediaSessionCompat mMediaSession;
     private PlaybackStateCompat.Builder mStateBuilder;
     private NotificationManager mNotificationManager;
 
@@ -440,6 +444,15 @@ public class QuizActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    // TODO (1): Create a static inner class that extends Broadcast Receiver and implement the onReceive() method.
-    //TODO (2): Call MediaButtonReceiver.handleIntent and pass in the incoming intent as well as the MediaSession object to forward the intent to the MediaSession.Callbacks.
+    // DONE (1): Create a static inner class that extends Broadcast Receiver and implement the onReceive() method.
+    // DONE (2): Call MediaButtonReceiver.handleIntent and pass in the incoming intent as well as the
+    // MediaSession object to forward the intent to the MediaSession.Callbacks.
+
+    public static class MediaReciver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            MediaButtonReceiver.handleIntent(mMediaSession, intent);
+        }
+    }
 }
